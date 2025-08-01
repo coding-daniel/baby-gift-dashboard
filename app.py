@@ -1,39 +1,45 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
+from datetime import datetime
+from uuid import uuid4
+from dotenv import load_dotenv
 from pathlib import Path
 import json
 import os
-from uuid import uuid4
-from datetime import datetime
-from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
+# Determine path prefix based on environment
 APP_PREFIX = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
 
+# Base directory of the project
+BASE_DIR = Path(__file__).resolve().parent
+
+# Set up Flask app
 app = Flask(
     __name__,
     static_url_path=f"{APP_PREFIX}/static",
-    static_folder=str(Path(__file__).resolve().parent / "static"),
-    template_folder=str(Path(__file__).resolve().parent / "templates")
+    static_folder=str(BASE_DIR / "static"),
+    template_folder=str(BASE_DIR / "templates")
 )
 app.secret_key = os.getenv("SECRET_KEY", "dev")
+app.config["APP_PREFIX"] = APP_PREFIX
 
+# Credentials
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "password")
 
-DATA_FILE = "data/products.json"
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs("data", exist_ok=True)
+# Data file path
+DATA_FILE = BASE_DIR / "data/products.json"
+os.makedirs(DATA_FILE.parent, exist_ok=True)
 
-# Load products from JSON file
+# Load and save helpers
 def load_products():
-    if not os.path.exists(DATA_FILE):
+    if not DATA_FILE.exists():
         return []
     with open(DATA_FILE, "r") as f:
         return json.load(f)
 
-# Save products to JSON file
 def save_products(products):
     with open(DATA_FILE, "w") as f:
         json.dump(products, f, indent=2)
@@ -41,11 +47,11 @@ def save_products(products):
 def is_logged_in():
     return session.get("logged_in", False)
 
+# Routes
 @app.route("/")
 def index():
     products = load_products()
-    url_prefix = app.config['APPLICATION_ROOT']
-    return render_template("index.html", url_prefix=url_prefix, products=products)
+    return render_template("index.html", url_prefix=app.config['APP_PREFIX'], products=products)
 
 @app.route("/mark/<product_id>", methods=["POST"])
 def mark_purchased(product_id):
@@ -64,6 +70,7 @@ def admin():
     products = load_products()
 
     if request.method == "POST":
+        # Handle login
         if "login" in request.form:
             username = request.form.get("username")
             password = request.form.get("password")
@@ -74,15 +81,18 @@ def admin():
                 flash("Invalid credentials.", "danger")
             return redirect(url_for("admin"))
 
+        # Handle logout
         if "logout" in request.form:
             session.pop("logged_in", None)
             flash("Logged out.", "info")
             return redirect(url_for("admin"))
 
+        # Require login for edits/adds/deletes
         if not is_logged_in():
             flash("Please log in to manage items.", "warning")
             return redirect(url_for("admin"))
 
+        # Handle product edits
         if "edit_id" in request.form:
             for p in products:
                 if p["id"] == request.form["edit_id"]:
@@ -92,6 +102,7 @@ def admin():
                     flash("Product updated.", "info")
                     break
         else:
+            # Handle new product addition
             name = request.form["name"]
             link = request.form["link"]
             image = request.form.get("image") or ""
@@ -109,8 +120,7 @@ def admin():
         save_products(products)
         return redirect(url_for("admin"))
 
-    url_prefix = app.config['APPLICATION_ROOT']
-    return render_template("admin.html", url_prefix=url_prefix, products=products, logged_in=is_logged_in())
+    return render_template("admin.html", url_prefix=app.config['APP_PREFIX'], products=products, logged_in=is_logged_in())
 
 @app.route("/delete/<product_id>", methods=["POST"])
 def delete_product(product_id):
