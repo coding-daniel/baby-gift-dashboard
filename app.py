@@ -52,6 +52,7 @@ def is_logged_in():
 def index():
     products = load_products()
     url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    print(url_prefix)
     return render_template("index.html", url_prefix=url_prefix, products=products)
 
 @app.route("/mark/<product_id>", methods=["POST"])
