@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+
+# Virtualenv
+.venv/
+env/
+venv/
+
+# Flask-related
+instance/
+.env
+.env.*
+
+# Tailwind / Node
+node_modules/
+package-lock.json
+
+# Editor files
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Static output (optional, if you build on deploy)
+static/tailwind.css
+
+data/products.json

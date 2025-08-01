@@ -1,0 +1,9 @@
+[
+  {
+    "id": "demo-1",
+    "name": "Soft Baby Blanket",
+    "link": "https://example.com/baby-blanket",
+    "image": "https://example.com/image.jpg",
+    "purchased": false
+  }
+]

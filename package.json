@@ -1,0 +1,14 @@
+{
+  "name": "babylist",
+  "version": "1.0.0",
+  "description": "Baby gift list web app",
+  "main": "tailwind.config.js",
+  "scripts": {
+    "build:css": "tailwindcss -i static/input.css -o static/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.3"
+  }
+}

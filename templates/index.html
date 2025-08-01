@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baby Gift List</title>
+  <link href="/static/tailwind.css" rel="stylesheet">
+</head>
+<body class="p-6 bg-gray-100 font-sans">
+  <h1 class="text-3xl font-bold mb-4">🎁 Our Baby Gift List</h1>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="mb-2 p-2 bg-green-100 text-green-800 rounded">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="grid gap-6 md:grid-cols-2">
+    {% for item in products %}
+      <div class="bg-white p-4 rounded shadow">
+        <h2 class="text-xl font-semibold">{{ item.name }}</h2>
+        <a href="{{ item.link }}" target="_blank" class="text-blue-600 underline break-all">View Product</a>
+        {% if item.image %}
+          <img src="{{ item.image }}" class="mt-2 max-h-48 object-contain" alt="Image">
+        {% endif %}
+        {% if item.purchased %}
+          <div class="mt-2 text-green-700 font-bold">Already purchased</div>
+        {% else %}
+          <form action="{{ url_for('mark_purchased', product_id=item.id) }}" method="POST" class="mt-2">
+            <button class="bg-green-500 text-white px-4 py-1 rounded">Mark as Purchased</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</body>
+</html>
