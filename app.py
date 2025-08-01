@@ -8,9 +8,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+APP_PREFIX = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+
 app = Flask(
     __name__,
-    static_url_path="/baby/static",
+    static_url_path=f"{APP_PREFIX}/static",
     static_folder=str(Path(__file__).resolve().parent / "static"),
     template_folder=str(Path(__file__).resolve().parent / "templates")
 )
@@ -42,7 +44,8 @@ def is_logged_in():
 @app.route("/")
 def index():
     products = load_products()
-    return render_template("index.html", products=products)
+    url_prefix = app.config['APPLICATION_ROOT']
+    return render_template("index.html", url_prefix=url_prefix, products=products)
 
 @app.route("/mark/<product_id>", methods=["POST"])
 def mark_purchased(product_id):
@@ -58,7 +61,6 @@ def mark_purchased(product_id):
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
-    print("Session state:", session)
     products = load_products()
 
     if request.method == "POST":
@@ -107,7 +109,8 @@ def admin():
         save_products(products)
         return redirect(url_for("admin"))
 
-    return render_template("admin.html", products=products, logged_in=is_logged_in())
+    url_prefix = app.config['APPLICATION_ROOT']
+    return render_template("admin.html", url_prefix=url_prefix, products=products, logged_in=is_logged_in())
 
 @app.route("/delete/<product_id>", methods=["POST"])
 def delete_product(product_id):
