@@ -52,7 +52,6 @@ def is_logged_in():
 def index():
     products = load_products()
     url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
-    print(url_prefix)
     return render_template("index.html", url_prefix=url_prefix, products=products)
 
 @app.route("/mark/<product_id>", methods=["POST"])
@@ -69,6 +68,7 @@ def mark_purchased(product_id):
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
+    url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
     products = load_products()
 
     if request.method == "POST":
@@ -81,18 +81,18 @@ def admin():
                 flash("Logged in successfully.", "info")
             else:
                 flash("Invalid credentials.", "danger")
-            return redirect(url_for("admin"))
+            return redirect(url_prefix + url_for("admin"))
 
         # Handle logout
         if "logout" in request.form:
             session.pop("logged_in", None)
             flash("Logged out.", "info")
-            return redirect(url_for("admin"))
+            return redirect(url_prefix + url_for("admin"))
 
         # Require login for edits/adds/deletes
         if not is_logged_in():
             flash("Please log in to manage items.", "warning")
-            return redirect(url_for("admin"))
+            return redirect(url_prefix + url_for("admin"))
 
         # Handle product edits
         if "edit_id" in request.form:
@@ -120,9 +120,8 @@ def admin():
             flash("Product added.", "info")
 
         save_products(products)
-        return redirect(url_for("admin"))
+        return redirect(url_prefix + url_for("admin"))
 
-    url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
     return render_template("admin.html", url_prefix=url_prefix, products=products, logged_in=is_logged_in())
 
 @app.route("/delete/<product_id>", methods=["POST"])
