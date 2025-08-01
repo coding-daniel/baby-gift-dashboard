@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
+from pathlib import Path
 import json
 import os
 from uuid import uuid4
@@ -7,7 +8,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__, static_url_path="/baby/static")
+app = Flask(
+    __name__,
+    static_url_path="/baby/static",
+    static_folder=str(Path(__file__).resolve().parent / "static"),
+    template_folder=str(Path(__file__).resolve().parent / "templates")
+)
 app.secret_key = os.getenv("SECRET_KEY", "dev")
 
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
