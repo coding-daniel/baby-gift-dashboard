@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="/baby/static")
 app.secret_key = os.getenv("SECRET_KEY", "dev")
 
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")

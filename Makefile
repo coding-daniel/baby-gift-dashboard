@@ -45,3 +45,6 @@ env:
 # Run Flask in screen session
 screen:
 	screen -S babylist make run
+
+tailwind-build:
+	npx tailwindcss -i static/input.css -o static/tailwind.css --minify
