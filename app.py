@@ -51,7 +51,8 @@ def is_logged_in():
 @app.route("/")
 def index():
     products = load_products()
-    return render_template("index.html", url_prefix=app.config['APP_PREFIX'], products=products)
+    url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    return render_template("index.html", url_prefix=url_prefix, products=products)
 
 @app.route("/mark/<product_id>", methods=["POST"])
 def mark_purchased(product_id):
@@ -120,7 +121,8 @@ def admin():
         save_products(products)
         return redirect(url_for("admin"))
 
-    return render_template("admin.html", url_prefix=app.config['APP_PREFIX'], products=products, logged_in=is_logged_in())
+    url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    return render_template("admin.html", url_prefix=url_prefix, products=products, logged_in=is_logged_in())
 
 @app.route("/delete/<product_id>", methods=["POST"])
 def delete_product(product_id):
