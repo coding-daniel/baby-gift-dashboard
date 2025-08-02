@@ -51,24 +51,14 @@ def is_logged_in():
 @app.route("/")
 def index():
     products = load_products()
-    url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
-    return render_template("index.html", url_prefix=url_prefix, products=products)
-
-@app.route("/mark/<product_id>", methods=["POST"])
-def mark_purchased(product_id):
-    products = load_products()
-    for p in products:
-        if p["id"] == product_id:
-            p["purchased"] = True
-            p["purchased_at"] = datetime.utcnow().isoformat()
-            flash(f"Thanks! '{p['name']}' marked as purchased.", "success")
-            break
-    save_products(products)
-    return redirect(url_for("index"))
+    html_prefix = "/baby/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    return render_template("index.html", route_prefix=route_prefix, url_prefix=html_prefix, products=products)
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
-    url_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    html_prefix = "/baby/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
     products = load_products()
 
     if request.method == "POST":
@@ -81,18 +71,18 @@ def admin():
                 flash("Logged in successfully.", "info")
             else:
                 flash("Invalid credentials.", "danger")
-            return redirect(url_prefix + url_for("admin"))
+            return redirect(route_prefix + url_for("admin"))
 
         # Handle logout
         if "logout" in request.form:
             session.pop("logged_in", None)
             flash("Logged out.", "info")
-            return redirect(url_prefix + url_for("admin"))
+            return redirect(route_prefix + url_for("admin"))
 
         # Require login for edits/adds/deletes
         if not is_logged_in():
             flash("Please log in to manage items.", "warning")
-            return redirect(url_prefix + url_for("admin"))
+            return redirect(route_prefix + url_for("admin"))
 
         # Handle product edits
         if "edit_id" in request.form:
@@ -120,27 +110,42 @@ def admin():
             flash("Product added.", "info")
 
         save_products(products)
-        return redirect(url_prefix + url_for("admin"))
+        return redirect(route_prefix + url_for("admin"))
 
-    return render_template("admin.html", url_prefix=url_prefix, products=products, logged_in=is_logged_in())
+    return render_template("admin.html", route_prefix=route_prefix, url_prefix=html_prefix, products=products, logged_in=is_logged_in())
+
+@app.route("/mark/<product_id>", methods=["POST"])
+def mark_purchased(product_id):
+    route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+    products = load_products()
+    for p in products:
+        if p["id"] == product_id:
+            p["purchased"] = True
+            p["purchased_at"] = datetime.utcnow().isoformat()
+            flash(f"Thanks! '{p['name']}' marked as purchased.", "success")
+            break
+    save_products(products)
+    return redirect(route_prefix + url_for("index"))
 
 @app.route("/delete/<product_id>", methods=["POST"])
 def delete_product(product_id):
+    route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
     if not is_logged_in():
         flash("Please log in to delete items.", "warning")
-        return redirect(url_for("admin"))
+        return redirect(route_prefix + url_for("admin"))
 
     products = load_products()
     products = [p for p in products if p["id"] != product_id]
     save_products(products)
     flash("Product deleted.", "warning")
-    return redirect(url_for("admin"))
+    return redirect(route_prefix + url_for("admin"))
 
 @app.route("/clear/<product_id>", methods=["POST"])
 def clear_flags(product_id):
+    route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
     if not is_logged_in():
         flash("Please log in to clear product status.", "warning")
-        return redirect(url_for("admin"))
+        return redirect(route_prefix + url_for("admin"))
 
     products = load_products()
     for p in products:
@@ -150,7 +155,7 @@ def clear_flags(product_id):
             flash(f"Status for '{p['name']}' has been cleared.", "info")
             break
     save_products(products)
-    return redirect(url_for("admin"))
+    return redirect(route_prefix + url_for("admin"))
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")

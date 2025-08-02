@@ -26,7 +26,7 @@
         {% if item.purchased %}
           <div class="mt-2 text-green-700 font-bold">Already purchased</div>
         {% else %}
-          <form action="{{ url_for('mark_purchased', product_id=item.id) }}" method="POST" class="mt-2">
+          <form action="{{ route_prefix }}{{ url_for('mark_purchased', product_id=item.id) }}" method="POST" class="mt-2">
             <button class="bg-green-500 text-white px-4 py-1 rounded">Mark as Purchased</button>
           </form>
         {% endif %}
