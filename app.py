@@ -136,5 +136,21 @@ def delete_product(product_id):
     flash("Product deleted.", "warning")
     return redirect(url_for("admin"))
 
+@app.route("/clear/<product_id>", methods=["POST"])
+def clear_flags(product_id):
+    if not is_logged_in():
+        flash("Please log in to clear product status.", "warning")
+        return redirect(url_for("admin"))
+
+    products = load_products()
+    for p in products:
+        if p["id"] == product_id:
+            p["purchased"] = False
+            p.pop("purchased_at", None)
+            flash(f"Status for '{p['name']}' has been cleared.", "info")
+            break
+    save_products(products)
+    return redirect(url_for("admin"))
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
