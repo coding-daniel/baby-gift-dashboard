@@ -6,7 +6,7 @@ PYTHON=$(VENV)/bin/python
 PIP=$(VENV)/bin/pip
 FLASK=$(VENV)/bin/flask
 ENV_FILE=.env
-PORT ?= 5000
+PORT ?= 5003
 
 # 1. Create Python virtual environment
 venv:

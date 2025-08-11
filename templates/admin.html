@@ -36,13 +36,42 @@
       {% set item = products | selectattr('id', 'equalto', request.args['edit']) | first %}
     {% endif %}
 
+    <!-- Add/Edit form -->
     <form method="POST" class="space-y-4 mb-6">
       {% if item %}
         <input type="hidden" name="edit_id" value="{{ item.id }}">
       {% endif %}
-      <input name="name" required placeholder="Product name" value="{{ item.name if item else '' }}" class="block w-full border p-2 rounded" />
-      <input name="link" required placeholder="Product link (URL)" value="{{ item.link if item else '' }}" class="block w-full border p-2 rounded" />
-      <input name="image" placeholder="Image URL (optional)" value="{{ item.image if item else '' }}" class="block w-full border p-2 rounded" />
+
+      <input name="name" required placeholder="Product name"
+             value="{{ item.name if item else '' }}"
+             class="block w-full border p-2 rounded" />
+
+      <input name="link" required placeholder="Product link (URL)"
+             value="{{ item.link if item else '' }}"
+             class="block w-full border p-2 rounded" />
+
+      <input name="image" placeholder="Image URL (optional)"
+             value="{{ item.image if item else '' }}"
+             class="block w-full border p-2 rounded" />
+
+      <input name="retailer" placeholder="Retailer (e.g., Amazon, Argos, Boots)"
+             value="{{ item.retailer if item and item.retailer is defined else '' }}"
+             class="block w-full border p-2 rounded" />
+
+      <div class="flex gap-2">
+        <input name="price" placeholder="Price (e.g., £29.99)"
+               value="{{ item.price if item and item.price is defined else '' }}"
+               class="block w-full border p-2 rounded" />
+        <button name="fetch_price" value="1"
+                class="px-3 py-2 border border-gray-300 rounded bg-white hover:bg-gray-100">
+          Fetch
+        </button>
+      </div>
+
+      {% if item and item.price_checked_at is defined and item.price_checked_at %}
+        <div class="text-xs text-gray-500">Last price check: {{ item.price_checked_at }}</div>
+      {% endif %}
+
       <button class="bg-blue-600 text-white px-4 py-2 rounded">
         {% if item %}Update Product{% else %}Add Product{% endif %}
       </button>
@@ -52,19 +81,36 @@
     <ul>
       {% for p in products %}
         <li class="mb-4 bg-white p-4 rounded shadow">
-          <div><strong>{{ p.name }}</strong></div>
-          <div><a href="{{ p.link }}" target="_blank" class="text-blue-600 underline">View</a></div>
+          <div class="flex items-center justify-between">
+            <strong class="text-lg">{{ p.name }}</strong>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            {% if p.retailer %}<span class="px-2 py-1 bg-gray-100 rounded">Retailer: <strong>{{ p.retailer }}</strong></span>{% endif %}
+            {% if p.price %}<span class="px-2 py-1 bg-gray-100 rounded">Price: <strong>{{ p.price }}</strong></span>{% endif %}
+          </div>
+          <div><a href="{{ p.link }}" target="_blank" class="text-blue-600 underline break-all">View</a></div>
+
           {% if p.image %}
-            <img src="{{ p.image }}" class="mt-2 max-h-32" />
+            <img src="{{ p.image }}" class="mt-2 max-h-32 object-contain" />
           {% endif %}
-          {% if p.purchased %}
-            <div class="mt-2 flex gap-2 items-center">
-              <div class="text-green-700 font-bold">Purchased</div>
-              <form action="{{ route_prefix }}{{ url_for('clear_flags', product_id=p.id) }}" method="POST" onsubmit="return confirm('Clear this item?')">
-                <button class="px-3 py-2 text-xs border border-gray-200 font-medium text-center text-gray-900 bg-white rounded-full hover:bg-gray-100 hover:text-blue-700 focus:outline-none focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700" type="submit">Clear</button>
+
+          <!-- Status row: Purchased / Reserved + Clear -->
+          {% if p.purchased or (p.reserved is defined and p.reserved) %}
+            <div class="mt-2 flex items-center gap-3">
+              {% if p.purchased %}
+                <span class="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded">Purchased</span>
+              {% endif %}
+              {% if p.reserved is defined and p.reserved %}
+                <span class="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded">Reserved</span>
+              {% endif %}
+              <form action="{{ route_prefix }}{{ url_for('clear_flags', product_id=p.id) }}" method="POST"
+                    onsubmit="return confirm('Clear purchased/reserved for this item?')">
+                <button class="px-3 py-2 text-xs border border-gray-200 font-medium text-center text-gray-900 bg-white rounded-full hover:bg-gray-100 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-gray-100"
+                        type="submit">Clear</button>
               </form>
             </div>
           {% endif %}
+
           <div class="mt-2 flex gap-2">
             <a href="{{ route_prefix }}{{ url_for('admin') }}?edit={{ p.id }}" class="text-yellow-600 underline">Edit</a>
             <form action="{{ route_prefix }}{{ url_for('delete_product', product_id=p.id) }}" method="POST" onsubmit="return confirm('Delete this item?')">

@@ -23,6 +23,10 @@
         {% if item.image %}
           <img src="{{ item.image }}" class="mt-2 max-h-48 object-contain" alt="Image">
         {% endif %}
+        <div class="mt-1 text-sm text-gray-700">
+          {% if item.retailer %}<span class="mr-2">Retailer: <strong>{{ item.retailer }}</strong></span>{% endif %}
+          {% if item.price %}<span>Price: <strong>{{ item.price }}</strong></span>{% endif %}
+        </div>
         {% if item.purchased %}
           <div class="mt-2 text-green-700 font-bold">Already purchased</div>
         {% else %}
