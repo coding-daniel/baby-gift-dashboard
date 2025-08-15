@@ -9,6 +9,8 @@ import re
 import requests
 import json as pyjson
 from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+from bs4 import BeautifulSoup
 
 # Load environment variables
 load_dotenv()
@@ -181,6 +183,104 @@ def try_fetch_price_from_structured_data(link: str):
     except Exception:
         return None
 
+def try_fetch_image_url(link: str):
+    """
+    Try to fetch a product image URL from:
+      1) <meta property="og:image"> / <meta name="twitter:image"> / twitter:image:src
+      2) JSON-LD Product.image (string or list)
+      3) Fallback: largest <img> by width*height, excluding sprites/logos/icons
+    Returns an absolute URL or None.
+    """
+    try:
+        resp = requests.get(link, timeout=8, headers={"User-Agent": "Mozilla/5.0 (ImageFetcher/1.0)"})
+        resp.raise_for_status()
+        html = resp.text
+        soup = BeautifulSoup(html, "html.parser")
+
+        def abs_url(u: str):
+            try:
+                return urljoin(link, u.strip())
+            except Exception:
+                return None
+
+        # 1) Open Graph / Twitter Card
+        meta_keys = [
+            ("property", "og:image"),
+            ("name", "twitter:image"),
+            ("name", "twitter:image:src"),
+        ]
+        for attr, key in meta_keys:
+            tag = soup.find("meta", attrs={attr: key})
+            if tag and tag.get("content"):
+                u = abs_url(tag["content"])
+                if u:
+                    return u
+
+        # 2) JSON-LD Product.image
+        for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
+            try:
+                data = pyjson.loads(script.string or script.text or "")
+            except Exception:
+                continue
+            nodes = data if isinstance(data, list) else [data]
+            for node in nodes:
+                if not isinstance(node, dict):
+                    continue
+                # Accept Product nodes or anything with "image"
+                if "image" in node:
+                    img = node["image"]
+                    candidates = img if isinstance(img, list) else [img]
+                    for c in candidates:
+                        if isinstance(c, str):
+                            u = abs_url(c)
+                            if u:
+                                return u
+
+        # 3) Largest <img>
+        def score_img(tag):
+            # Filter out obvious non-product images
+            src = (tag.get("src") or "").lower()
+            cls = " ".join(tag.get("class", [])).lower()
+            if any(x in src for x in ["sprite", "logo", "icon", "favicon", "placeholder"]):
+                return -1
+            if any(x in cls for x in ["sprite", "logo", "icon", "avatar"]):
+                return -1
+
+            # Prefer bigger images by width*height
+            def to_int(v):
+                try:
+                    return int(re.sub(r"[^0-9]", "", str(v)))
+                except Exception:
+                    return 0
+
+            w = to_int(tag.get("width") or tag.get("data-width") or tag.get("data-image-width"))
+            h = to_int(tag.get("height") or tag.get("data-height") or tag.get("data-image-height"))
+
+            # If no dims, give a small base score
+            if w == 0 or h == 0:
+                return 100
+            return w * h
+
+        best = None
+        best_score = -1
+        for img in soup.find_all("img"):
+            src = img.get("src")
+            if not src:
+                continue
+            s = score_img(img)
+            if s > best_score:
+                best = src
+                best_score = s
+
+        if best:
+            u = abs_url(best)
+            if u:
+                return u
+
+        return None
+    except Exception:
+        return None
+
 # Load and save helpers
 def load_products():
     if not DATA_FILE.exists():
@@ -199,6 +299,8 @@ def is_logged_in():
 @app.route("/")
 def index():
     products = load_products()
+    # Sort so not purchased first, then by name (optional)
+    products.sort(key=lambda p: (p.get("purchased", False), p.get("name", "").lower()))
     html_prefix = "/baby/baby" if os.environ.get("APP_ENV") == "pi" else ""
     route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
     return render_template("index.html", route_prefix=route_prefix, url_prefix=html_prefix, products=products)
@@ -254,6 +356,20 @@ def admin():
             else:
                 flash("Couldn’t find a price on that page.", "warning")
             # We continue to save with the (possibly) updated price
+
+        # Button: Fetch image
+        if "fetch_image" in request.form and link:
+            fetched_image = try_fetch_image_url(link)
+            if fetched_image:
+                image = fetched_image
+                flash("Image URL fetched from page.", "info")
+            else:
+                flash("Couldn’t find a product image on that page.", "warning")
+
+        # Optional dedicated button to clear image (keeps form simple):
+        if "clear_image" in request.form:
+            image = ""
+            flash("Image cleared.", "info")
 
         # --- Edit existing item ---
         if "edit_id" in request.form:

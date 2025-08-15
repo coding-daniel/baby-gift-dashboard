@@ -51,8 +51,22 @@
              class="block w-full border p-2 rounded" />
 
       <input name="image" placeholder="Image URL (optional)"
-             value="{{ item.image if item else '' }}"
-             class="block w-full border p-2 rounded" />
+            value="{{ item.image if item else '' }}"
+            class="block w-full border p-2 rounded" />
+
+      <div class="flex gap-2">
+        <button name="fetch_image" value="1"
+                class="px-3 py-2 border border-gray-300 rounded bg-white hover:bg-gray-100">
+          Fetch image
+        </button>
+
+        <!-- Optional: explicit clear button; or just delete the text and click Save -->
+        <button name="clear_image" value="1"
+                class="px-3 py-2 border border-gray-300 rounded bg-white hover:bg-gray-100"
+                type="submit">
+          Clear image
+        </button>
+      </div>
 
       <input name="retailer" placeholder="Retailer (e.g., Amazon, Argos, Boots)"
              value="{{ item.retailer if item and item.retailer is defined else '' }}"
