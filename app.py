@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, after_this_request
 from datetime import datetime
 from uuid import uuid4
 from dotenv import load_dotenv
@@ -305,12 +305,24 @@ def is_logged_in():
 @app.route("/")
 def index():
     products = load_products()
-    # Sort so not purchased first, then by name (optional)
-    products.sort(key=lambda p: (p.get("purchased", False), p.get("name", "").lower()))
+
     html_prefix = "/baby/baby" if os.environ.get("APP_ENV") == "pi" else ""
     route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
+
+    # Only show visible items
     visible_products = [p for p in products if p.get("visible", True)]
-    return render_template("index.html", route_prefix=route_prefix, url_prefix=html_prefix, products=visible_products)
+
+    # Sort: unpurchased first, then by name
+    visible_products.sort(
+        key=lambda p: (p.get("purchased", False), p.get("name", "").lower())
+    )
+
+    return render_template(
+        "index.html",
+        route_prefix=route_prefix,
+        url_prefix=html_prefix,
+        products=visible_products
+    )
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
@@ -476,6 +488,13 @@ def clear_flags(product_id):
             break
     save_products(products)
     return redirect(route_prefix + url_for("admin"))
+
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
