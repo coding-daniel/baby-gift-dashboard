@@ -6,37 +6,56 @@
   <link href="{{ url_prefix }}/static/tailwind.css" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="{{ url_prefix }}/static/favicon.ico">
 </head>
-<body class="p-6 bg-gray-100 font-sans">
-  <h1 class="text-3xl font-bold mb-4 text-center">🎁 Our Baby Gift List</h1>
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="mb-2 p-2 bg-green-100 text-green-800 rounded">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+<body class="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-amber-50">
 
-  <div class="grid gap-6 md:grid-cols-2">
-    {% for item in products %}
-      <div class="bg-white p-4 rounded shadow">
-        <h2 class="text-xl font-semibold">{{ item.name }}</h2>
-        <a href="{{ item.link }}" target="_blank" class="text-blue-600 underline break-all">View Product</a>
-        {% if item.image %}
-          <img src="{{ item.image }}" class="mt-2 max-h-48 object-contain" alt="Image">
+    <div class="relative min-h-screen">
+    <!-- pattern layer -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 bg-repeat opacity-10"
+      style="
+        background-image: url('{{ url_prefix }}/static/patterns/stars.svg');
+        background-size: 28px 28px;
+      ">
+    </div>
+
+    <!-- your content goes here -->
+    <main class="relative z-10 mx-auto p-4 sm:p-6">
+      <h1 class="text-3xl font-bold text-rose-600 text-center">🎁 Our Baby Gift List</h1>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="mb-2 p-2 bg-green-100 text-green-800 rounded">{{ message }}</div>
+          {% endfor %}
         {% endif %}
-        <div class="mt-1 text-sm text-gray-700">
-          {% if item.retailer %}<span class="mr-2">Retailer: <strong>{{ item.retailer }}</strong></span>{% endif %}
-          {% if item.price %}<span>Price: <strong>{{ item.price }}</strong></span>{% endif %}
-        </div>
-        {% if item.purchased %}
-          <div class="mt-2 text-green-700 font-bold">Already purchased</div>
-        {% else %}
-          <form action="{{ route_prefix }}{{ url_for('mark_purchased', product_id=item.id) }}" method="POST" class="mt-2">
-            <button class="bg-green-500 text-white px-4 py-1 rounded">Mark as Purchased</button>
-          </form>
-        {% endif %}
+      {% endwith %}
+
+      <div class="grid gap-6 md:grid-cols-2 pt-8">
+        {% for item in products %}
+          <div class="rounded-lg bg-white shadow-md p-4 border border-pink-100">
+            <h2 class="text-xl font-semibold">{{ item.name }}</h2>
+            <a href="{{ item.link }}" target="_blank" class="text-blue-600 underline break-all">View Product</a>
+            {% if item.image %}
+              <img src="{{ item.image }}" class="mt-2 max-h-48 object-contain" alt="Image">
+            {% endif %}
+            <div class="mt-1 text-sm text-gray-700">
+              {% if item.retailer %}<span class="mr-2">Retailer: <strong>{{ item.retailer }}</strong></span>{% endif %}
+              {% if item.price %}<span>Price: <strong>{{ item.price }}</strong></span>{% endif %}
+            </div>
+            {% if item.purchased %}
+              <div class="mt-2 text-green-700 font-bold">Already purchased</div>
+            {% else %}
+              <form action="{{ route_prefix }}{{ url_for('mark_purchased', product_id=item.id) }}" method="POST" class="mt-2">
+                <button class="bg-green-500 text-white px-4 py-1 rounded">Mark as Purchased</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
       </div>
-    {% endfor %}
+    </main>
   </div>
+
+
+
 </body>
 </html>

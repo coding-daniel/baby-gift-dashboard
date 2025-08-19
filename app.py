@@ -281,12 +281,18 @@ def try_fetch_image_url(link: str):
     except Exception:
         return None
 
-# Load and save helpers
 def load_products():
     if not DATA_FILE.exists():
         return []
     with open(DATA_FILE, "r") as f:
-        return json.load(f)
+        products = json.load(f)
+
+    # Normalise new keys for older data
+    for p in products:
+        p.setdefault("visible", True)
+        p.setdefault("reserved", False)
+
+    return products
 
 def save_products(products):
     with open(DATA_FILE, "w") as f:
@@ -303,7 +309,8 @@ def index():
     products.sort(key=lambda p: (p.get("purchased", False), p.get("name", "").lower()))
     html_prefix = "/baby/baby" if os.environ.get("APP_ENV") == "pi" else ""
     route_prefix = "/baby" if os.environ.get("APP_ENV") == "pi" else ""
-    return render_template("index.html", route_prefix=route_prefix, url_prefix=html_prefix, products=products)
+    visible_products = [p for p in products if p.get("visible", True)]
+    return render_template("index.html", route_prefix=route_prefix, url_prefix=html_prefix, products=visible_products)
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
@@ -370,6 +377,18 @@ def admin():
         if "clear_image" in request.form:
             image = ""
             flash("Image cleared.", "info")
+
+        # Inside the POST handling of /admin
+        if "toggle_id" in request.form:
+            pid = request.form["toggle_id"]
+            for p in products:
+                if p["id"] == pid:
+                    current = p.get("visible", True)
+                    p["visible"] = not current
+                    flash(f"Visibility toggled: {p['name']} is now {'shown' if p['visible'] else 'hidden'}.", "info")
+                    break
+            save_products(products)
+            return redirect(route_prefix + url_for("admin"))
 
         # --- Edit existing item ---
         if "edit_id" in request.form:

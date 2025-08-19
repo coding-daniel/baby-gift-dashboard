@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <g fill="#000000">
+    <!-- larger 5-point stars -->
+    <path d="M32 8l3 9h9l-7.5 5.5L39 32l-7-5-7 5 2.5-9.5L20 17h9l3-9z"/>
+    <path d="M12 44l2 6h6l-5 3.5L17 60l-5-3.5-5 3.5 2-6-5-3.5h6l2-6z"/>
+    <path d="M52 44l2 6h6l-5 3.5L57 60l-5-3.5-5 3.5 2-6-5-3.5h6l2-6z"/>
+  </g>
+</svg>
