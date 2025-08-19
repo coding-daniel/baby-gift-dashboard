@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, after_this_request
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from uuid import uuid4
 from dotenv import load_dotenv
 from pathlib import Path
@@ -34,6 +35,10 @@ app.config["APP_PREFIX"] = APP_PREFIX
 # Credentials
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "password")
+
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_TOKEN")  # support either name
+TELEGRAM_CHAT_IDS = [cid.strip() for cid in (os.getenv("TELEGRAM_CHAT_IDS") or "").split(",") if cid.strip()]
+NOTIFY_ENABLED = (os.getenv("NOTIFY_ENABLED", "true").lower() == "true")
 
 # Data file path
 DATA_FILE = BASE_DIR / "data/products.json"
@@ -95,6 +100,47 @@ def _fmt_price(price, currency=None):
         # put GBP/£ niceties here if you want locale-aware formatting later
         return f"{c} {p}"
     return p
+
+def _escape(text: str) -> str:
+    """Basic MarkdownV2 escaping for Telegram to avoid formatting errors."""
+    # We'll send as plain text (no parse_mode), so this is conservative.
+    # If you switch to Markdown, you'll need stronger escaping.
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+def current_uk_time() -> str:
+    # Europe/London automatically handles GMT/BST
+    now = datetime.now(ZoneInfo("Europe/London"))
+    return now.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+def send_telegram_message(message: str) -> None:
+    """Send message to all configured chat IDs. Fail silently."""
+    if not (NOTIFY_ENABLED and TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_IDS):
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    for chat_id in TELEGRAM_CHAT_IDS:
+        try:
+            requests.post(url, json={"chat_id": chat_id, "text": message}, timeout=5)
+        except Exception:
+            # don't let notification errors affect user flow
+            pass
+
+def notify_purchase(product: dict):
+    """Compose and send a purchase notification."""
+    name = product.get("name", "Unnamed item")
+    retailer = product.get("retailer") or ""
+    price = product.get("price") or ""
+    link = product.get("link") or ""
+
+    parts = [f"🎁 Marked as purchased: {name}"]
+    if retailer:
+        parts.append(f"Retailer: {retailer}")
+    if price:
+        parts.append(f"Price: {price}")
+    if link:
+        parts.append(f"Link: {link}")
+    parts.append(f"Time: {current_uk_time()}")
+
+    send_telegram_message("\n".join(parts))
 
 def try_fetch_price_from_structured_data(link: str):
     """
@@ -452,10 +498,17 @@ def mark_purchased(product_id):
     products = load_products()
     for p in products:
         if p["id"] == product_id:
-            p["purchased"] = True
-            p["purchased_at"] = datetime.utcnow().isoformat()
-            flash(f"Thanks! '{p['name']}' marked as purchased.", "success")
+
+            if p.get("purchased"):
+                flash(f"'{p['name']}' was already marked as purchased.", "info")
+            else:
+                p["purchased"] = True
+                p["purchased_at"] = datetime.utcnow().isoformat()
+                flash(f"Thanks! '{p['name']}' marked as purchased.", "success")
+                # 🔔 send Telegram notification (best-effort)
+                notify_purchase(p)
             break
+
     save_products(products)
     return redirect(route_prefix + url_for("index"))
 
