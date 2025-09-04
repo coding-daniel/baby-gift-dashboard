@@ -452,6 +452,32 @@ def admin():
             save_products(products)
             return redirect(route_prefix + url_for("admin"))
 
+        # --- Duplicate item ---
+        if "duplicate_id" in request.form:
+            pid = request.form["duplicate_id"]
+            for p in products:
+                if p.get("id") == pid:
+                    new_item = {
+                        "id": str(uuid4()),
+                        "name": p.get("name", ""),
+                        "link": p.get("link", ""),
+                        "image": p.get("image", ""),
+                        "price": p.get("price", ""),
+                        "retailer": p.get("retailer", ""),
+                        "visible": p.get("visible", True),
+                        "purchased": False,
+                        "reserved": False,
+                    }
+                    # optional: carry price_checked_at; comment out to skip
+                    if p.get("price_checked_at"):
+                        new_item["price_checked_at"] = p["price_checked_at"]
+
+                    products.append(new_item)
+                    save_products(products)
+                    flash(f"Duplicated '{p.get('name','Item')}'.", "info")
+                    # jump straight into editing the new copy
+                    return redirect(route_prefix + url_for("admin") + f"?edit={new_item['id']}")
+
         # --- Edit existing item ---
         if "edit_id" in request.form:
             edit_id = request.form["edit_id"]
