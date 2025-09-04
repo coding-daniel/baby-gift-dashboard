@@ -8,6 +8,7 @@ import json
 import os
 import re
 import requests
+import random
 import json as pyjson
 from urllib.parse import urlparse
 from urllib.parse import urlparse, urljoin
@@ -358,16 +359,19 @@ def index():
     # Only show visible items
     visible_products = [p for p in products if p.get("visible", True)]
 
-    # Sort: unpurchased first, then by name
-    visible_products.sort(
-        key=lambda p: (p.get("purchased", False), p.get("name", "").lower())
-    )
+    unpurchased = [p for p in visible_products if not p.get("purchased", False)]
+    purchased = [p for p in visible_products if p.get("purchased", False)]
+
+    # Randomize unpurchased order every page load
+    random.shuffle(unpurchased)
+
+    ordered = unpurchased + purchased
 
     return render_template(
         "index.html",
         route_prefix=route_prefix,
         url_prefix=html_prefix,
-        products=visible_products
+        products=ordered
     )
 
 @app.route("/admin", methods=["GET", "POST"])
